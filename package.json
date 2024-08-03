@@ -39,7 +39,8 @@
     "react-native-screens": "3.31.1",
     "react-native-web": "~0.19.10",
     "xstate": "^5.17.1",
-    "@react-native-async-storage/async-storage": "1.23.1"
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "expo-linear-gradient": "~13.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
