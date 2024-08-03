@@ -33,9 +33,11 @@ export default function HomeScreen() {
     ).start()
   }, [])
 
+  const isBreak = state.value === 'break'
+
   const backgroundColor = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#FF6347', '#FF4500'], // Tomato to OrangeRed
+    outputRange: isBreak ? ['#FFD700', '#FFA500'] : ['#FF6347', '#FF4500'], // Gold to Orange for break, Tomato to OrangeRed for work
   })
 
   const renderButtons = () => {
@@ -48,13 +50,19 @@ export default function HomeScreen() {
     } else if (state.value === 'paused') {
       mainButtonTitle = 'Resume'
       mainButtonAction = () => send({ type: 'resume' })
+    } else if (state.value === 'break') {
+      mainButtonTitle = 'Skip Break'
+      mainButtonAction = () => send({ type: 'skip' })
     }
 
-    const isIdle = state.value === 'idle'
+    const showResetButton = !['idle', 'break'].includes(state.value as string)
 
     return (
       <View
-        style={[styles.buttonContainer, isIdle && styles.singleButtonContainer]}
+        style={[
+          styles.buttonContainer,
+          !showResetButton && styles.singleButtonContainer,
+        ]}
       >
         <Button
           title={mainButtonTitle}
@@ -62,7 +70,7 @@ export default function HomeScreen() {
           buttonStyle={styles.buttonStyle}
           containerStyle={styles.buttonInnerContainer}
         />
-        {!isIdle && (
+        {showResetButton && (
           <Button
             title="Reset"
             onPress={() => send({ type: 'reset' })}
@@ -81,7 +89,12 @@ export default function HomeScreen() {
           <Text style={styles.counter}>
             {formatTime(state.context.duration)}
           </Text>
-          <Text style={styles.stateText}>{state.value as string}</Text>
+          <Text style={styles.stateText}>
+            {isBreak ? 'Break Time!' : (state.value as string)}
+          </Text>
+          {/* <Text style={styles.pomodoroCount}>
+            Completed Pomodoros: {state.context.completedPomodoros}
+          </Text> */}
           {renderButtons()}
         </View>
       </SafeAreaView>
@@ -110,6 +123,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: 'white',
     fontSize: 24,
+  },
+  pomodoroCount: {
+    marginTop: 10,
+    color: 'white',
+    fontSize: 18,
   },
   buttonContainer: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
 import { assign, fromCallback, setup } from 'xstate'
 
 const DEFAULT_DURATION = 25 * 60
+const BREAK_DURATION = 5 * 60
 
 export const stopwatchMachine = setup({
   actors: {
@@ -12,10 +13,11 @@ export const stopwatchMachine = setup({
     }),
   },
 }).createMachine({
-  id: 'stopwatch',
+  id: 'pomodoro',
   initial: 'idle',
   context: {
     duration: DEFAULT_DURATION,
+    completedPomodoros: 0,
   },
   states: {
     idle: {
@@ -53,13 +55,46 @@ export const stopwatchMachine = setup({
       },
     },
     complete: {
-      type: 'final',
+      entry: assign({
+        completedPomodoros: ({ context }) => context.completedPomodoros + 1,
+      }),
+      after: {
+        0: 'break',
+      },
+    },
+    break: {
+      entry: assign({
+        duration: BREAK_DURATION,
+      }),
+      invoke: {
+        src: 'ticks',
+      },
+      on: {
+        TICK: [
+          {
+            guard: ({ context }) => context.duration <= 1,
+            target: 'idle',
+            actions: [
+              assign({
+                duration: DEFAULT_DURATION,
+              }),
+            ],
+          },
+          {
+            actions: assign({
+              duration: ({ context }) => context.duration - 1,
+            }),
+          },
+        ],
+        skip: 'idle',
+      },
     },
   },
   on: {
     reset: {
       actions: assign({
         duration: DEFAULT_DURATION,
+        completedPomodoros: 0,
       }),
       target: '.idle',
     },
