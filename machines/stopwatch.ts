@@ -13,12 +13,12 @@ export const stopwatchMachine = setup({
   },
 }).createMachine({
   id: 'stopwatch',
-  initial: 'stopped',
+  initial: 'idle',
   context: {
     duration: DEFAULT_DURATION,
   },
   states: {
-    stopped: {
+    idle: {
       on: {
         start: 'running',
       },
@@ -42,7 +42,14 @@ export const stopwatchMachine = setup({
             }),
           },
         ],
-        stop: 'stopped',
+        pause: 'paused',
+        stop: 'idle',
+      },
+    },
+    paused: {
+      on: {
+        resume: 'running',
+        stop: 'idle',
       },
     },
     complete: {
@@ -54,7 +61,7 @@ export const stopwatchMachine = setup({
       actions: assign({
         duration: DEFAULT_DURATION,
       }),
-      target: '.stopped',
+      target: '.idle',
     },
   },
 })

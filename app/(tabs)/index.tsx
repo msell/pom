@@ -15,34 +15,57 @@ const formatTime = (seconds: number) => {
 export default function HomeScreen() {
   const [state, send] = useMachine(stopwatchMachine)
 
+  const renderActionButton = () => {
+    switch (state.value) {
+      case 'idle':
+        return (
+          <Button
+            title="Start"
+            onPress={() => send({ type: 'start' })}
+            containerStyle={styles.button}
+          />
+        )
+      case 'running':
+        return (
+          <Button
+            title="Pause"
+            onPress={() => send({ type: 'pause' })}
+            containerStyle={styles.button}
+          />
+        )
+      case 'paused':
+        return (
+          <Button
+            title="Resume"
+            onPress={() => send({ type: 'resume' })}
+            containerStyle={styles.button}
+          />
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeView}>
       <View style={styles.container}>
         <Text h1 style={styles.counter}>
           {formatTime(state.context.duration)}
         </Text>
-        <Text h3 style={styles.counter}>
-          {state.value}
+        <Text h3 style={styles.stateText}>
+          {state.value as string}
         </Text>
 
-        {state.value !== 'running' && (
-          <Button
-            title="Start"
-            onPress={() => {
-              send({ type: 'start' })
-            }}
-            containerStyle={styles.button}
-          />
-        )}
-        {state.value === 'running' && (
-          <Button
-            title="Reset"
-            onPress={() => {
-              send({ type: 'reset' })
-            }}
-            containerStyle={styles.button}
-          />
-        )}
+        <View style={styles.buttonContainer}>
+          {renderActionButton()}
+          {state.value !== 'idle' && (
+            <Button
+              title="Reset"
+              onPress={() => send({ type: 'reset' })}
+              containerStyle={styles.button}
+            />
+          )}
+        </View>
       </View>
     </SafeAreaView>
   )
@@ -64,15 +87,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 48,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
+  stateText: {
+    marginTop: 20,
+    textAlign: 'center',
   },
-  input: {
-    flex: 1,
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
   },
   button: {
     width: 100,
+    marginHorizontal: 10,
   },
 })
