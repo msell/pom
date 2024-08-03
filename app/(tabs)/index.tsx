@@ -1,5 +1,5 @@
-import React from 'react'
-import { StyleSheet, View, SafeAreaView } from 'react-native'
+import React, { useRef, useEffect } from 'react'
+import { StyleSheet, View, SafeAreaView, Animated } from 'react-native'
 import { Button, Text } from '@rneui/themed'
 import { stopwatchMachine } from '@/machines/stopwatch'
 import { useMachine } from '@xstate/react'
@@ -14,90 +14,120 @@ const formatTime = (seconds: number) => {
 
 export default function HomeScreen() {
   const [state, send] = useMachine(stopwatchMachine)
+  const animation = useRef(new Animated.Value(0)).current
 
-  const renderActionButton = () => {
-    switch (state.value) {
-      case 'idle':
-        return (
-          <Button
-            title="Start"
-            onPress={() => send({ type: 'start' })}
-            containerStyle={styles.button}
-          />
-        )
-      case 'running':
-        return (
-          <Button
-            title="Pause"
-            onPress={() => send({ type: 'pause' })}
-            containerStyle={styles.button}
-          />
-        )
-      case 'paused':
-        return (
-          <Button
-            title="Resume"
-            onPress={() => send({ type: 'resume' })}
-            containerStyle={styles.button}
-          />
-        )
-      default:
-        return null
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(animation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animation, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start()
+  }, [])
+
+  const backgroundColor = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#FF6347', '#FF4500'], // Tomato to OrangeRed
+  })
+
+  const renderButtons = () => {
+    let mainButtonTitle = 'Start'
+    let mainButtonAction = () => send({ type: 'start' })
+
+    if (state.value === 'running') {
+      mainButtonTitle = 'Pause'
+      mainButtonAction = () => send({ type: 'pause' })
+    } else if (state.value === 'paused') {
+      mainButtonTitle = 'Resume'
+      mainButtonAction = () => send({ type: 'resume' })
     }
+
+    const isIdle = state.value === 'idle'
+
+    return (
+      <View
+        style={[styles.buttonContainer, isIdle && styles.singleButtonContainer]}
+      >
+        <Button
+          title={mainButtonTitle}
+          onPress={mainButtonAction}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonInnerContainer}
+        />
+        {!isIdle && (
+          <Button
+            title="Reset"
+            onPress={() => send({ type: 'reset' })}
+            buttonStyle={styles.buttonStyle}
+            containerStyle={styles.buttonInnerContainer}
+          />
+        )}
+      </View>
+    )
   }
 
   return (
-    <SafeAreaView style={styles.safeView}>
-      <View style={styles.container}>
-        <Text h1 style={styles.counter}>
-          {formatTime(state.context.duration)}
-        </Text>
-        <Text h3 style={styles.stateText}>
-          {state.value as string}
-        </Text>
-
-        <View style={styles.buttonContainer}>
-          {renderActionButton()}
-          {state.value !== 'idle' && (
-            <Button
-              title="Reset"
-              onPress={() => send({ type: 'reset' })}
-              containerStyle={styles.button}
-            />
-          )}
+    <Animated.View style={[styles.container, { backgroundColor }]}>
+      <SafeAreaView style={styles.safeView}>
+        <View style={styles.content}>
+          <Text style={styles.counter}>
+            {formatTime(state.context.duration)}
+          </Text>
+          <Text style={styles.stateText}>{state.value as string}</Text>
+          {renderButtons()}
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
-  safeView: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
   container: {
     flex: 1,
-    backgroundColor: 'white',
+  },
+  safeView: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
-    paddingTop: 100,
+    justifyContent: 'center',
   },
   counter: {
-    marginTop: 100,
-    textAlign: 'center',
-    fontSize: 48,
+    fontSize: 72,
+    color: 'white',
+    fontWeight: 'bold',
   },
   stateText: {
     marginTop: 20,
-    textAlign: 'center',
+    color: 'white',
+    fontSize: 24,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 30,
+    marginTop: 40,
+    width: '100%',
   },
-  button: {
-    width: 100,
+  singleButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonInnerContainer: {
+    width: 150,
     marginHorizontal: 10,
+  },
+  buttonStyle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 25,
+    paddingVertical: 15,
   },
 })
