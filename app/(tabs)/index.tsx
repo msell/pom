@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 import { StyleSheet, View, SafeAreaView, Animated } from 'react-native'
-import { Button, Text } from '@rneui/themed'
+import { Button, Text, Input } from '@rneui/themed'
 import { stopwatchMachine } from '@/machines/stopwatch'
 import { useMachine } from '@xstate/react'
 
@@ -85,6 +85,15 @@ export default function HomeScreen() {
   return (
     <Animated.View style={[styles.container, { backgroundColor }]}>
       <SafeAreaView style={styles.safeView}>
+        <Input
+          placeholder="What are you focused on?"
+          inputStyle={{ color: 'white' }}
+          placeholderTextColor="white"
+          inputContainerStyle={{
+            borderBottomColor: 'white',
+            marginTop: 100,
+          }}
+        />
         <View style={styles.content}>
           <Text style={styles.counter}>
             {formatTime(state.context.duration)}
