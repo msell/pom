@@ -7,7 +7,7 @@ export const stopwatchMachine = setup({
     ticks: fromCallback(({ sendBack }) => {
       const interval = setInterval(() => {
         sendBack({ type: 'TICK' })
-      }, 10)
+      }, 1000)
       return () => clearInterval(interval)
     }),
   },

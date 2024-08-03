@@ -16,23 +16,43 @@ export default function HomeScreen() {
   const [state, send] = useMachine(stopwatchMachine)
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Button
-        title="Start"
-        onPress={() => {
-          send({ type: 'start' })
-        }}
-        containerStyle={styles.button}
-      />
+    <SafeAreaView style={styles.safeView}>
+      <View style={styles.container}>
+        <Text h1 style={styles.counter}>
+          {formatTime(state.context.duration)}
+        </Text>
+        <Text h3 style={styles.counter}>
+          {state.value}
+        </Text>
 
-      <Text h1 style={styles.counter}>
-        {formatTime(state.context.duration)}
-      </Text>
+        {state.value !== 'running' && (
+          <Button
+            title="Start"
+            onPress={() => {
+              send({ type: 'start' })
+            }}
+            containerStyle={styles.button}
+          />
+        )}
+        {state.value === 'running' && (
+          <Button
+            title="Reset"
+            onPress={() => {
+              send({ type: 'reset' })
+            }}
+            containerStyle={styles.button}
+          />
+        )}
+      </View>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
+  safeView: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
   container: {
     flex: 1,
     backgroundColor: 'white',
