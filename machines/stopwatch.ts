@@ -50,8 +50,14 @@ export const stopwatchMachine = setup({
     },
     paused: {
       on: {
-        resume: 'running',
-        stop: 'idle',
+        resume: {
+          target: 'running',
+          actions: assign({ lastUpdated: () => Date.now() }),
+        },
+        stop: {
+          target: 'idle',
+          actions: assign({ lastUpdated: () => Date.now() }),
+        },
       },
     },
     complete: {
@@ -77,12 +83,14 @@ export const stopwatchMachine = setup({
             actions: [
               assign({
                 duration: DEFAULT_DURATION,
+                lastUpdated: () => Date.now(),
               }),
             ],
           },
           {
             actions: assign({
               duration: ({ context }) => context.duration - 1,
+              lastUpdated: Date.now(),
             }),
           },
         ],
@@ -95,11 +103,13 @@ export const stopwatchMachine = setup({
       actions: assign({
         duration: DEFAULT_DURATION,
         completedPomodoros: 0,
+        lastUpdated: () => Date.now(),
       }),
       restore: {
         actions: assign((_, event: any) => ({
           duration: event.context.duration,
           completedPomodoros: event.context.completedPomodoros,
+          lastUpdated: Date.now(),
         })),
         target: '.idle',
       },

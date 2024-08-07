@@ -82,7 +82,13 @@ export default function HomeScreen() {
       const storedState = await AsyncStorage.getItem(TIMER_STORAGE_KEY)
       if (storedState) {
         const { value, context } = JSON.parse(storedState)
-        send({ type: 'restore', value, context })
+        const now = Date.now()
+        const elapsedSeconds = Math.floor((now - context.lastUpdated) / 1000)
+        send({
+          type: 'restore',
+          context: context,
+          elapsedSeconds: elapsedSeconds,
+        })
       }
     }
     loadStoredState()
