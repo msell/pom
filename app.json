@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "fun-with-expo-sql-lite",
-    "slug": "fun-with-expo-sql-lite",
+    "name": "pom",
+    "slug": "pom",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.atomicbytes.pom"
     },
     "android": {
       "adaptiveIcon": {
@@ -38,6 +39,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "2b816578-f52a-424f-936e-e65eff889df0"
+      }
+    },
+    "owner": "msell"
   }
 }
