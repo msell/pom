@@ -96,7 +96,13 @@ export const stopwatchMachine = setup({
         duration: DEFAULT_DURATION,
         completedPomodoros: 0,
       }),
-      target: '.idle',
+      restore: {
+        actions: assign((_, event: any) => ({
+          duration: event.context.duration,
+          completedPomodoros: event.context.completedPomodoros,
+        })),
+        target: '.idle',
+      },
     },
   },
 })

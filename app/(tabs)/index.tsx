@@ -3,6 +3,13 @@ import { StyleSheet, View, SafeAreaView, Animated } from 'react-native'
 import { Button, Text, Input } from '@rneui/themed'
 import { stopwatchMachine } from '@/machines/stopwatch'
 import { useMachine } from '@xstate/react'
+import * as BackgroundFetch from 'expo-background-fetch'
+import * as TaskManager from 'expo-task-manager'
+import * as Notifications from 'expo-notifications'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+const BACKGROUND_FETCH_TASK = 'background-fetch'
+const TIMER_STORAGE_KEY = '@timer_state'
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
@@ -12,21 +19,99 @@ const formatTime = (seconds: number) => {
     .padStart(2, '0')}`
 }
 
+TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+  const storedState = await AsyncStorage.getItem(TIMER_STORAGE_KEY)
+  if (storedState) {
+    const { value, context } = JSON.parse(storedState)
+    if (value === 'running') {
+      const newDuration = context.duration - 15 // Assume 15 seconds have passed
+      if (newDuration <= 0) {
+        // Timer expired
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Timer Expired!',
+            body: 'Your Pomodoro session has ended.',
+          },
+          trigger: null,
+        })
+        await AsyncStorage.setItem(
+          TIMER_STORAGE_KEY,
+          JSON.stringify({
+            value: 'complete',
+            context: { ...context, duration: 0 },
+          })
+        )
+      } else {
+        // Update stored state
+        await AsyncStorage.setItem(
+          TIMER_STORAGE_KEY,
+          JSON.stringify({
+            value,
+            context: { ...context, duration: newDuration },
+          })
+        )
+      }
+    }
+  }
+  return BackgroundFetch.BackgroundFetchResult.NewData
+})
+
 export default function HomeScreen() {
   const [state, send] = useMachine(stopwatchMachine)
   const animation = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    // Register background fetch task
+    BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
+      minimumInterval: 15, // 15 seconds
+      stopOnTerminate: false,
+      startOnBoot: true,
+    })
+
+    // Set up notifications
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    })
+
+    // Load stored state
+    const loadStoredState = async () => {
+      const storedState = await AsyncStorage.getItem(TIMER_STORAGE_KEY)
+      if (storedState) {
+        const { value, context } = JSON.parse(storedState)
+        send({ type: 'restore', value, context })
+      }
+    }
+    loadStoredState()
+
+    // Clean up
+    return () => {
+      BackgroundFetch.unregisterTaskAsync(BACKGROUND_FETCH_TASK)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Store state changes
+    AsyncStorage.setItem(
+      TIMER_STORAGE_KEY,
+      JSON.stringify({ value: state.value, context: state.context })
+    )
+  }, [state])
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(animation, {
           toValue: 1,
-          duration: 2000,
+          duration: 4000,
           useNativeDriver: false,
         }),
         Animated.timing(animation, {
           toValue: 0,
-          duration: 2000,
+          duration: 4000,
           useNativeDriver: false,
         }),
       ])

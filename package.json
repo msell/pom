@@ -40,7 +40,10 @@
     "react-native-web": "~0.19.10",
     "xstate": "^5.17.1",
     "@react-native-async-storage/async-storage": "1.23.1",
-    "expo-linear-gradient": "~13.0.2"
+    "expo-linear-gradient": "~13.0.2",
+    "expo-background-fetch": "~12.0.1",
+    "expo-task-manager": "~11.8.2",
+    "expo-notifications": "~0.28.15"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
