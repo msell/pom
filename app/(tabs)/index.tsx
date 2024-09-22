@@ -1,5 +1,11 @@
-import React, { useRef, useEffect } from 'react'
-import { StyleSheet, View, SafeAreaView, Animated } from 'react-native'
+import React, { useRef, useEffect, useState } from 'react'
+import {
+  StyleSheet,
+  View,
+  SafeAreaView,
+  Animated,
+  AppState,
+} from 'react-native'
 import { Button, Text, Input } from '@rneui/themed'
 import { stopwatchMachine } from '@/machines/stopwatch'
 import { useMachine } from '@xstate/react'
@@ -57,9 +63,29 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
 })
 
 export default function HomeScreen() {
+  const appState = useRef(AppState.currentState)
+  const [appStateVisible, setAppStateVisible] = useState(appState.current)
   const [state, send] = useMachine(stopwatchMachine)
   const animation = useRef(new Animated.Value(0)).current
 
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        console.log('App has come to the foreground!')
+      }
+
+      appState.current = nextAppState
+      setAppStateVisible(appState.current)
+      console.log('AppState', appState.current)
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [])
   useEffect(() => {
     // Register background fetch task
     BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
