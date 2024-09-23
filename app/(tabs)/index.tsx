@@ -82,10 +82,18 @@ export default function HomeScreen() {
   const appState = useRef(AppState.currentState)
   const [appStateVisible, setAppStateVisible] = useState(appState.current)
   const [state, send] = useMachine(stopwatchMachine)
-  const animation = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     requestLocalNotificationPermissions()
+  }, [])
+
+  useEffect(() => {
+    if (state.value === 'complete') {
+      alert('Pom complete')
+    }
+  })
+
+  useEffect(() => {
     const remainingTime = state.context.duration
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (
@@ -93,6 +101,8 @@ export default function HomeScreen() {
         nextAppState === 'active'
       ) {
         console.log('App has come to the foreground!')
+
+        Notifications.cancelAllScheduledNotificationsAsync()
       }
 
       console.log({
