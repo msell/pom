@@ -88,7 +88,7 @@ export default function HomeScreen() {
   }, [])
 
   useEffect(() => {
-    if (state.value === 'complete') {
+    if (state.value === 'complete' && appStateVisible === 'active') {
       alert('Pom complete')
     }
   })
