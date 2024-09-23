@@ -14,6 +14,22 @@ import * as TaskManager from 'expo-task-manager'
 import * as Notifications from 'expo-notifications'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+async function requestLocalNotificationPermissions() {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync()
+  let finalStatus = existingStatus
+
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync()
+    finalStatus = status
+  }
+
+  if (finalStatus !== 'granted') {
+    alert('Permission to send notifications was denied')
+    return false
+  }
+
+  return true
+}
 const BACKGROUND_FETCH_TASK = 'background-fetch'
 const TIMER_STORAGE_KEY = '@timer_state'
 
@@ -69,6 +85,8 @@ export default function HomeScreen() {
   const animation = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
+    requestLocalNotificationPermissions()
+    const remainingTime = state.context.duration
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -77,6 +95,30 @@ export default function HomeScreen() {
         console.log('App has come to the foreground!')
       }
 
+      console.log({
+        current: appState.current,
+        nextAppState,
+        stateMachineState: state.value,
+      })
+      if (
+        ['inactive', 'background'].includes(nextAppState) &&
+        appState.current === 'active' &&
+        state.value === 'running'
+      ) {
+        // schedule notification and write state to storage
+        console.log(`scheduleing notifiation in ${remainingTime} seconds`)
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Time's up!",
+            body: 'Pomodoro complete.',
+          },
+          trigger: {
+            seconds: remainingTime,
+          },
+        }).then((notificationId) => {
+          console.log(`notificationId ${notificationId}`)
+        })
+      }
       appState.current = nextAppState
       setAppStateVisible(appState.current)
       console.log('AppState', appState.current)
@@ -85,7 +127,7 @@ export default function HomeScreen() {
     return () => {
       subscription.remove()
     }
-  }, [])
+  }, [state.value, state.context.duration])
   useEffect(() => {
     // Register background fetch task
     BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
@@ -133,29 +175,7 @@ export default function HomeScreen() {
     )
   }, [state])
 
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(animation, {
-          toValue: 1,
-          duration: 4000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(animation, {
-          toValue: 0,
-          duration: 4000,
-          useNativeDriver: false,
-        }),
-      ])
-    ).start()
-  }, [])
-
   const isBreak = state.value === 'break'
-
-  const backgroundColor = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: isBreak ? ['#FFD700', '#FFA500'] : ['#FF6347', '#FF4500'], // Gold to Orange for break, Tomato to OrangeRed for work
-  })
 
   const renderButtons = () => {
     let mainButtonTitle = 'Start'
@@ -200,7 +220,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor }]}>
+    <View style={[styles.container]}>
       <SafeAreaView style={styles.safeView}>
         <Input
           placeholder="What are you focused on?"
@@ -224,13 +244,14 @@ export default function HomeScreen() {
           {renderButtons()}
         </View>
       </SafeAreaView>
-    </Animated.View>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FF6347',
   },
   safeView: {
     flex: 1,

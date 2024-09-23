@@ -1,13 +1,32 @@
 import { assign, fromCallback, setup } from 'xstate'
 
-const DEFAULT_DURATION = 25 * 60
+const DEFAULT_DURATION = 1 * 60
 const BREAK_DURATION = 5 * 60
 
+export interface StopwatchContext {
+  duration: number
+  completedPomodoros: number
+  lastUpdated?: number
+}
+
+export type StopwatchEvent =
+  | { type: 'start' }
+  | { type: 'pause' }
+  | { type: 'resume' }
+  | { type: 'reset' }
+  | { type: 'skip' }
+  | { type: 'tick' }
+  | { type: 'restore'; context: StopwatchContext; elapsedSeconds: number }
+
 export const stopwatchMachine = setup({
+  types: {} as {
+    context: StopwatchContext
+    events: StopwatchEvent
+  },
   actors: {
     ticks: fromCallback(({ sendBack }) => {
       const interval = setInterval(() => {
-        sendBack({ type: 'TICK' })
+        sendBack({ type: 'tick' })
       }, 1000)
       return () => clearInterval(interval)
     }),
@@ -30,9 +49,10 @@ export const stopwatchMachine = setup({
         src: 'ticks',
       },
       on: {
-        TICK: [
+        tick: [
           {
-            guard: ({ context }) => context.duration <= 1,
+            guard: ({ context }: { context: StopwatchContext }) =>
+              context.duration <= 1,
             target: 'complete',
             actions: assign({
               duration: 0,
@@ -45,17 +65,12 @@ export const stopwatchMachine = setup({
           },
         ],
         pause: 'paused',
-        stop: 'idle',
       },
     },
     paused: {
       on: {
         resume: {
           target: 'running',
-          actions: assign({ lastUpdated: () => Date.now() }),
-        },
-        stop: {
-          target: 'idle',
           actions: assign({ lastUpdated: () => Date.now() }),
         },
       },
@@ -76,9 +91,10 @@ export const stopwatchMachine = setup({
         src: 'ticks',
       },
       on: {
-        TICK: [
+        tick: [
           {
-            guard: ({ context }) => context.duration <= 1,
+            guard: ({ context }: { context: StopwatchContext }) =>
+              context.duration <= 1,
             target: 'idle',
             actions: [
               assign({
@@ -105,14 +121,14 @@ export const stopwatchMachine = setup({
         completedPomodoros: 0,
         lastUpdated: () => Date.now(),
       }),
-      restore: {
-        actions: assign((_, event: any) => ({
-          duration: event.context.duration,
-          completedPomodoros: event.context.completedPomodoros,
-          lastUpdated: Date.now(),
-        })),
-        target: '.idle',
-      },
+      // restore: {
+      //   actions: assign((_, event: any) => ({
+      //     duration: event.context.duration,
+      //     completedPomodoros: event.context.completedPomodoros,
+      //     lastUpdated: Date.now(),
+      //   })),
+      //   target: '.idle',
+      // },
     },
   },
 })
